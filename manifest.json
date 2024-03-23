@@ -1,0 +1,23 @@
+{
+	"manifest_version": 3,
+	"name": "Asistente Autoevaluaciones",
+	"version": "1.0",
+	"description": "Permite copiar las preguntas y respuestas de las autoevaluaciones.",
+	"permissions": [
+		"tabs",
+		"downloads"
+	],
+	"background": {
+		"service_worker": "background.js"
+	},
+	"content_scripts": [
+		{
+			"matches": [
+				"https://palermo.blackboard.com/*"
+			],
+			"js": [
+				"content.js"
+			]
+		}
+	]
+}
