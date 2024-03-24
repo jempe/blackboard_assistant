@@ -16,41 +16,129 @@
 			log('Found ' + question_forms.length + ' questions on the page.');
 			for (var i = 0; i < question_forms.length; i++) {
 				const question_form = question_forms[i];
+
+				const question_helper_container = document.createElement('div');
+
 				// add copy text sections
-				/*const download_button = document.createElement('button');
-				download_button.innerText = 'Download Images';
-				download_button.setAttribute('style', 'background: #ff0081; color: white; padding: 0 20px; border-radius: 5px; margin-left: 15px;');
+				const prompt_button = document.createElement('button');
+				prompt_button.innerText = 'Get Prompt';
+				prompt_button.setAttribute('style', 'background: #ff0081; color: white; padding: 10px 20px; border-radius: 5px; margin-left: 15px;');
 
-				download_button.addEventListener('click', get_images);*/
+				prompt_button.addEventListener('click', get_prompt);
 
-
-				const question_title = question_form.querySelector('h3').innerText;
-				const question_text = question_form.querySelector("div[role='presentation']").innerText.replace(/\n+/g, '\n').replace(/\s+/g, ' ').trim();
-
-				var question_options = "Opciones:\n";
-
-				const question_options_elements = question_form.querySelectorAll('.multiple-answer-answers-container input, .true-false-answers input');
-
-				for (var j = 0; j < question_options_elements.length; j++) {
-					const option = question_options_elements[j];
-					const option_text = document.querySelector("label[for='" + option.id + "']").innerText;
-					question_options += '[ ] ' + option_text + "\n";
-				}
+				question_helper_container.appendChild(prompt_button);
 
 				const question_textarea = document.createElement('textarea');
 				question_textarea.setAttribute('style', 'width: 100%; height: 100px; margin-top: 20px;');
 				question_textarea.setAttribute('readonly', 'true');
 				question_textarea.classList.add('autoevaluations-assistant-textarea');
-				question_textarea.value = question_title + ":\n" + question_text + "\n" + question_options;
 
 
 				const question_content = question_form.querySelector('.question-content');
 
-				question_content.insertAdjacentElement('afterEnd', question_textarea);
+
+				question_helper_container.appendChild(question_textarea);
+
+
+				question_content.insertAdjacentElement('afterEnd', question_helper_container);
 
 				log('Addded textarea to question.');
 			}
 
+		}
+	}
+
+	async function get_prompt(evt) {
+		console.log(window.basic_auth);
+		if(localStorage.getItem('basic_auth') === null) {
+			alert('Please set your basic auth credentials in the extension options.');
+			return;
+		}
+
+		const question_form = evt.target.closest("form[name='questionForm']");
+
+
+		const question_textarea = question_form.querySelector('.autoevaluations-assistant-textarea');
+
+		const semantic_search_query = get_question(question_form, 'prompt');
+
+		const url = new URL('https://dev.jempe.org/webservice/v1/phrases_search');
+
+		const params = {
+			search: semantic_search_query,
+			paper_id: localStorage.getItem('paper_id'),
+			page_size: 4
+		};
+
+		url.search = new URLSearchParams(params).toString();
+
+		const options = {method: 'GET', headers: {Authorization: localStorage.getItem('basic_auth')}};
+
+		try {
+			const response = await fetch(url, options);
+			const data = await response.json();
+			console.log(data);
+			console.log(question_textarea);
+
+			var prompt_text = '';
+
+			if(data.phrases.length > 0) {
+				for (var i = 0; i < data.phrases.length; i++) {
+					prompt_text += data.phrases[i].content + '\n';
+				}
+			}
+
+			prompt_text += "\nArriba están mis apuntes de " + localStorage.getItem('subject_name') + "\n\n";
+
+			prompt_text += semantic_search_query;
+
+			prompt_text += "\n\n";
+
+
+			prompt_text += "Selecciona las opciones que sean correctas, pueden ser varias";
+
+			question_textarea.value = prompt_text;
+
+			setTimeout(() => {
+				copy_to_clipboard(question_form);
+			}, 100);
+
+		} catch (error) {
+			console.error(error);
+		}
+	}
+
+	function copy_to_clipboard(question_form) {
+		const question_textarea = question_form.querySelector('.autoevaluations-assistant-textarea');
+		question_textarea.select();
+		document.execCommand('copy');
+	}
+
+
+	function get_question(question_form, format) {
+		const question_title = question_form.querySelector('h3').innerText;
+		const question_text = question_form.querySelector("div[role='presentation']").innerText.replace(/\n+/g, '\n').replace(/\s+/g, ' ').trim();
+
+		var question_options = [];
+
+		const question_options_elements = question_form.querySelectorAll('.multiple-answer-answers-container input, .true-false-answers input');
+
+		for (var j = 0; j < question_options_elements.length; j++) {
+			const option = question_options_elements[j];
+			const option_text = document.querySelector("label[for='" + option.id + "']").innerText;
+			question_options.push(option_text);
+		}
+
+		if (format === 'save') {
+			var options_text = '';
+
+			for (var k = 0; k < question_options.length; k++) {
+				options_text += '[ ]' + question_options[k] + '\n';
+			}
+
+			return question_title + '\n\n' + question_text + '\nOpciones:\n' + options_text;
+		} else if (format === 'prompt') {
+			return question_text + ' (' + question_options.join(',') + ')';
 		}
 	}
 
