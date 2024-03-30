@@ -3,6 +3,9 @@
 	setInterval(add_textareas, 1000);
 
 	function add_textareas() {
+
+
+
 		const questions_section = document.querySelector(".attempt-authoring-container section");
 		const autoevaluations_textareas = document.querySelectorAll('.autoevaluations-assistant-textarea');
 
@@ -94,8 +97,11 @@
 
 			prompt_text += "\n\n";
 
-
-			prompt_text += "Selecciona las opciones que sean correctas, pueden ser varias";
+			if(question_form.querySelectorAll("form[name='questionForm'] input[ng-click*='onSingleAnswer'], form[name='questionForm'] input[id*='true-false-answer-true']").length > 0) {
+				prompt_text += "Selecciona la opción correcta";
+			} else {
+				prompt_text += "Selecciona las opciones que sean correctas, pueden ser varias";
+			}
 
 			question_textarea.value = prompt_text;
 
@@ -138,7 +144,7 @@
 
 			return question_title + '\n\n' + question_text + '\nOpciones:\n' + options_text;
 		} else if (format === 'prompt') {
-			return question_text + ' (' + question_options.join(',') + ')';
+			return question_text + '\nOpciones:\n' + question_options.join('\n');
 		}
 	}
 
