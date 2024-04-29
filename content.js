@@ -12,7 +12,7 @@
 	}
 
 	function getSubjectID(subject_name) {
-	console.log(subject_name);
+	console.log("subject name:", subject_name);
   var subject_data = [{
         "id": 1,
         "name": "Introducción a las Comunicaciones"
@@ -67,8 +67,6 @@
     }];
 
     for (var i = 0; i < subject_data.length; i++) {
-      console.log(subject_name);
-      console.log(subject_data[i].name);
       if (subject_data[i].name === subject_name) {
         return subject_data[i].id;
       }
@@ -86,12 +84,12 @@ function add_textareas() {
 		);
 
 		// only display button on the autoevaluations pages
-		if (questions_section && autoevaluations_textareas.length === 0) {
+		if (document.querySelector("div[ng-if='showCourse()']") && questions_section && autoevaluations_textareas.length === 0) {
 
   		window.subject_name = findTextBetweenChars(
   			")",
   			"-",
-  			document.querySelector("div[ng-if='showCourse()']").innerText,
+  			document.querySelector("div[ng-if='showCourse()']").textContent.trim(),
   		);
 
 			log("Found questions section on the page.");
